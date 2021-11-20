@@ -1,0 +1,70 @@
+
+/* import csv file data into table */
+
+use db_programming;
+
+------------------------------------------------
+
+-- check file upload path --
+
+mysql> Show variables like "secure_file%";
++------------------+------------------------------------------------+
+| Variable_name    | Value                                          |
++------------------+------------------------------------------------+
+| secure_file_priv | C:\ProgramData\MySQL\MySQL Server 8.0\Uploads\ |
++------------------+------------------------------------------------+
+1 row in set (0.05 sec)
+
+------------------------------------------------
+
+-- insert data from csv file --
+
+LOAD DATA 
+INFILE 'C://ProgramData//MySQL//MySQL Server 8.0//Uploads//transaction_log_loyalty_lineitem.csv' 
+INTO TABLE txlll 
+FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\r\n' 
+IGNORE 1 ROWS ;
+
+/*
+Query OK, 71931 rows affected (27.90 sec)
+Records: 71931  Deleted: 0  Skipped: 0  Warnings: 0
+*/
+
+------------------------------------------------
+
+-- set YMD format as date for dates in DMY format --
+
+update txlll 
+set bill_date=date_format(str_to_date(bill_date,'%d-%m-%Y'),'%Y-%m-%d');
+
+------------------------------------------------
+
+-- export table data as csv file --
+
+select 'User_id', 'Total_spend', 'Txn_date'
+UNION All
+(	select user_id, (amount - discount) as total_spend, txn_date
+from db_programming.transaction_log_loyalty 
+ORDER BY (user_id) ASC 
+)
+INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/table5.csv' 
+FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\r\n';
+
+------------------------------------------------
+
+-- using union all --
+
+insert into op3
+select total_visits,count(user_id)  from table_op1 where total_visits=1
+union all select total_visits,count(user_id)  from table_op1 where total_visits=2
+union all select total_visits,count(user_id)  from table_op1 where total_visits=3
+union all select total_visits,count(user_id)  from table_op1 where total_visits=4
+union all select total_visits,count(user_id)  from table_op1 where total_visits=5
+union all select total_visits,count(user_id)  from table_op1 where total_visits=6
+union all select total_visits,count(user_id)  from table_op1 where total_visits=7
+union all select total_visits,count(user_id)  from table_op1 where total_visits=8
+union all select total_visits,count(user_id)  from table_op1 where total_visits=9
+union all select total_visits,count(user_id) as customers from table_op1 where total_visits>9;
+
