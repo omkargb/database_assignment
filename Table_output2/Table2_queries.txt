@@ -1,0 +1,72 @@
+-- Stored procedure for drop_rate table --
+
+drop procedure if exists droprate;
+DELIMITER $$
+CREATE PROCEDURE droprate()
+BEGIN
+declare i int;
+declare total int;
+declare total2 int;
+set i=0;
+	DROP table if exists myoutput;
+     CREATE TEMPORARY TABLE myoutput (	total_visits VARCHAR(3),  customers INT	);	
+	
+   loop_loop: LOOP
+     SET i = i + 1;
+     IF i <=9 THEN
+		set total = (select count(user_id) from table_op1 where total_visits = i);
+		insert into myoutput values (i, total);
+		ITERATE loop_loop;
+     END IF;
+
+     set total2 = (select count(user_id) from table_op1 where total_visits > 9);
+     insert into myoutput values ('9+', total2 );
+   
+   LEAVE loop_loop;
+   END LOOP loop_loop;
+
+   select * from myoutput;
+ END
+ $$
+DELIMITER ;		
+
+-- Execute proocedure --
+
+truncate myoutput;
+call droprate();
+
+------------------------------------------------
+
+select *, (sum(customers) over (order by Total_Visits desc)) as cumulative 
+from myoutput group by total_visits order by total_visits asc ;
+
+
+-- Query output --
+
+total_visits, customers, cumulative
+1		19082	35119
+2		7270	16037
+3		3265	8767
+4		2381	5502
+5		812	3121
+6		781	2309
+7		185	1528
+8		429	1343
+9		99	914
+9+		815	815
+
+------------------------------------------------
+
+-- Export to csv --
+
+select 'Total_visits', 'Customers', 'Cumulative'
+UNION All
+(
+select total_visits,customers, (sum(customers) over (order by Total_Visits desc)) as cumulative 
+from myoutput group by total_visits order by total_visits asc 
+)
+INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/droprate_output.csv' 
+FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\r\n';
+
+

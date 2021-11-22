@@ -2,23 +2,29 @@ select
 'User_id','Total_spend','Total_bills','Total_visits', 'First_transaction_date', 'Last_transaction_date',
 'First_transaction_store','Last_transaction_store',
 'Fav_store','Total_quantity_purchased'
+
 UNION
+
 ( 
 select 
 tx1.user_id, 
 (tx1.amount - tx1.discount) as total_spend, 
 (tx1.amount) as total_bill, 
 count(tx1.user_id) as total_visits,
-min(tx2.bill_date) as first_transaction_date,  		max(tx2.bill_date) as last_transaction_date,
+min(tx2.bill_date) as first_transaction_date,  		
+max(tx2.bill_date) as last_transaction_date,
 (select tx2.store_name where tx2.bill_date = min(tx2.bill_date)) as first_transaction_store,
 (select tx2.store_name where tx2.bill_date = max(tx2.bill_date)) as last_transaction_store,
 (select tx2.store_name group by tx2.store_name order by count(tx2.store_name) desc) as fav_store,
 (select sum(tx2.qty)) as total_quantity_purchased
+
 from db_programming.transaction_log_loyalty as tx1
+
 join db_programming.txlll as tx2 
 on tx1.user_id=tx2.user_id
 group BY (tx2.user_id) ORDER BY tx2.user_id 
 )
+
 INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/table1_op.csv' 
 FIELDS TERMINATED BY ',' 
 LINES TERMINATED BY '\r\n';
