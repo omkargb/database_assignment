@@ -1,6 +1,5 @@
 
 /* brand_lapsation table stored procedure */
-
 drop procedure if exists sp_brand_lapsation;
 
 DELIMITER $$
@@ -12,7 +11,7 @@ BEGIN
 	
 	drop table if exists brand_lapsation_tbl;
 	
-    create temporary table brand_lapsation_tbl(
+    	create temporary table brand_lapsation_tbl(
 	days_since_last_visit varchar(6),
 	no_of_bills int,
 	bill_percentage float default 0.0
@@ -23,42 +22,27 @@ BEGIN
 			LEAVE  loop_label;
 		END  IF;
         
-		IF  days=0 
-        THEN 
-		-- select days, days+30;
         insert into brand_lapsation_tbl (days_since_last_visit,no_of_bills,bill_percentage)
         (	
-        select CONCAT('< ',days+30), count(bill_number) ,(count(bill_number)*100/
-        (select count(bill_number)   from tx_log_loyalty ))
+        select CONCAT('<',days+30), count( distinct bill_number) ,(count( distinct bill_number)*100/
+        (select count( distinct bill_number)   from tx_log_loyalty ))
         from tx_log_loyalty 
-        where days_since_last_visit BETWEEN (days) AND (days +30)
-        ); 		
-		
-        SET  inc = inc + 1;
-        set days=days+30;
-        
-        ELSE
-		-- select days+1, days+30;
-        insert into brand_lapsation_tbl (days_since_last_visit,no_of_bills,bill_percentage)
-        (	
-        select CONCAT('< ',days+30), count(bill_number) ,(count(bill_number)*100/
-        (select count(bill_number)   from tx_log_loyalty ))
-        from tx_log_loyalty 
-        where days_since_last_visit BETWEEN (days+1) AND (days + 30)
+        where days_since_last_visit BETWEEN 0 AND (days + 30)
         ); 
         
-        		SET  inc = inc + 1;
+		SET  inc = inc + 1;
         set days=days+30;
-        end IF;
         
 	END LOOP;
     select * from brand_lapsation_tbl;
 END$$
 
 
+
 -- Execute stored procedure  --
 
 call sp_brand_lapsation();
+
 
 
 -- Query output --
@@ -67,32 +51,31 @@ mysql> call sp_brand_lapsation();
 +-----------------------+-------------+-----------------+
 | days_since_last_visit | no_of_bills | bill_percentage |
 +-----------------------+-------------+-----------------+
-| < 30                  |       38145 |         97.9458 |
-| < 60                  |         145 |         0.37232 |
-| < 90                  |          89 |        0.228527 |
-| < 120                 |          96 |        0.246501 |
-| < 150                 |          72 |        0.184876 |
-| < 180                 |          55 |        0.141225 |
-| < 210                 |          25 |       0.0641931 |
-| < 240                 |          15 |       0.0385159 |
-| < 270                 |          14 |       0.0359481 |
-| < 300                 |          18 |        0.046219 |
-| < 330                 |          20 |       0.0513545 |
-| < 360                 |          24 |       0.0616254 |
+| <30                   |       38145 |         97.9458 |
+| <60                   |       38290 |         98.3181 |
+| <90                   |       38379 |         98.5467 |
+| <120                  |       38475 |         98.7932 |
+| <150                  |       38547 |          98.978 |
+| <180                  |       38602 |         99.1193 |
+| <210                  |       38627 |         99.1835 |
+| <240                  |       38642 |          99.222 |
+| <270                  |       38656 |         99.2579 |
+| <300                  |       38674 |         99.3041 |
+| <330                  |       38694 |         99.3555 |
+| <360                  |       38718 |         99.4171 |
 +-----------------------+-------------+-----------------+
-12 rows in set (5.03 sec)
+12 rows in set (8.79 sec)
 
-Query OK, 0 rows affected (5.07 sec)
+Query OK, 0 rows affected (8.86 sec)
+
 
 
 -- Exporting output to csv --
 
-
 select 'Days_since_last_visit',	'No_of_bills','%_Bills'
 union all
 select * from brand_lapsation_tbl
-INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/brand_lapsation.csv' 
+INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/brand_lapsation_op.csv' 
 FIELDS TERMINATED BY ',' 
 LINES TERMINATED BY '\r\n';
-
 
