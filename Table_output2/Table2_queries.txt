@@ -1,59 +1,78 @@
+
 -- Stored procedure for drop_rate table --
 
-drop procedure if exists droprate;
+
 DELIMITER $$
-CREATE PROCEDURE droprate()
+drop procedure if exists drop_rate_complex;
+
+CREATE PROCEDURE drop_rate_complex()
 BEGIN
-declare i int;
-declare total int;
-declare total2 int;
-set i=0;
-	DROP table if exists myoutput;
-     CREATE TEMPORARY TABLE myoutput (	total_visits VARCHAR(3),  customers INT	);	
+	DECLARE inc  INT;
+	SET inc = 1;
 	
-   loop_loop: LOOP
-     SET i = i + 1;
-     IF i <=9 THEN
-		set total = (select count(user_id) from table_op1 where total_visits = i);
-		insert into myoutput values (i, total);
-		ITERATE loop_loop;
-     END IF;
+    	DROP table if exists drop_rate_tbl;
+	CREATE TEMPORARY TABLE drop_rate_tbl
+	( total_visits varchar(5), customer int );
 
-     set total2 = (select count(user_id) from table_op1 where total_visits > 9);
-     insert into myoutput values ('9+', total2 );
-   
-   LEAVE loop_loop;
-   END LOOP loop_loop;
+	loop_label:  LOOP
+	IF  inc > 9 THEN 
+		LEAVE  loop_label;
+	END  IF;
+         
+        insert into drop_rate_tbl
+        select inc, count(derived.total_visits) as total_visits FROM
+        (
+		select 
+		tx1.user_id, count(bill_number) as total_visits
+		from db_programming.tx_log_loyalty as tx1
+		join db_programming.txlll as tx2 on tx1.user_id=tx2.user_id
+		group BY (tx2.user_id) ORDER BY tx2.user_id 
+	) as derived
+	where total_visits = inc ;
+	SET  inc = inc + 1; 
+	END LOOP;
+    
+	insert into drop_rate_tbl
+        select '9+', count(derived.total_visits) as total_visits FROM
+        (
+			select 
+			tx1.user_id, count(bill_number) as total_visits
+			from db_programming.tx_log_loyalty as tx1
+			join db_programming.txlll as tx2 on tx1.user_id=tx2.user_id
+			group BY (tx2.user_id) ORDER BY tx2.user_id 
+		) as derived
+		where total_visits >9;
+END 
+$$
 
-   select * from myoutput;
- END
- $$
-DELIMITER ;		
 
 -- Execute proocedure --
 
-truncate myoutput;
-call droprate();
+call drop_rate_complex();
 
 ------------------------------------------------
 
-select *, (sum(customers) over (order by Total_Visits desc)) as cumulative 
-from myoutput group by total_visits order by total_visits asc ;
+-- cumulative result Query --
 
+select * from drop_rate_tbl;
+
+select *, (sum(customer) over (order by Total_Visits desc)) as cumulative 
+from drop_rate_tbl group by total_visits order by total_visits asc ;
+		
 
 -- Query output --
 
-total_visits, customers, cumulative
-1		19082	35119
-2		7270	16037
-3		3265	8767
-4		2381	5502
-5		812	3121
-6		781	2309
-7		185	1528
-8		429	1343
-9		99	914
-9+		815	815
+total_visits, customer, cumulative
+1		19219	35877
+2		7407	16658
+3		3389	9251
+4		2482	5862
+5		888	3380
+6		846	2492
+7		202	1646
+8		451	1444
+9		110	993
+9+		883	883
 
 ------------------------------------------------
 
@@ -62,11 +81,12 @@ total_visits, customers, cumulative
 select 'Total_visits', 'Customers', 'Cumulative'
 UNION All
 (
-select total_visits,customers, (sum(customers) over (order by Total_Visits desc)) as cumulative 
-from myoutput group by total_visits order by total_visits asc 
+select *, (sum(customer) over (order by Total_Visits desc)) as cumulative 
+from drop_rate_tbl group by total_visits order by total_visits asc 
 )
-INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/droprate_output.csv' 
+INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/droprate_output_complexq.csv' 
 FIELDS TERMINATED BY ',' 
 LINES TERMINATED BY '\r\n';
+
 
 
