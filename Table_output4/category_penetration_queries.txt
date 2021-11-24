@@ -1,0 +1,49 @@
+
+-- Query for category penetration table --
+
+select distinct tx1.category as Category, 
+count( tx2.bill_number) as Bills , 
+count(distinct tx2.user_id ) as Customers, 
+sum(tx2.amount) as Sales,	
+count(tx3.qty) as Qty_sold 
+from product_master tx1 
+join tx_log_loyalty tx2 on tx1.id=tx2.store_id 
+join tx_log_loyalty_lineitem tx3 on  tx2.user_id=tx3.user_id 
+group by category; 
+
+
+
+-- Query output --
+
++--------------------------+-------+-----------+----------+----------+
+| Category                 | Bills | Customers | Sales    | Qty_sold |
++--------------------------+-------+-----------+----------+----------+
+| CAD                      |     5 |         3 |     3635 |        5 |
+| DIABETES                 |   994 |       490 |  1972141 |      994 |
+| HEALTH CHECK-UPS         |  1432 |       759 |  2855306 |     1432 |
+| HEPATITIS & GI DISORDERS | 21085 |      7871 | 41493493 |    21085 |
+| PREVENTIVE HEALTH CHECK  |   941 |       448 |  1948086 |      941 |
+| THYROID DISORDERS        |  1043 |       559 |  2771854 |     1043 |
+| TUBERCULOSIS             |  1482 |       670 |  4226185 |     1482 |
++--------------------------+-------+-----------+----------+----------+
+7 rows in set (1.04 sec)
+
+
+
+-- Exporting output to csv file --
+
+select 'Category','Bills','Customers', 'Sales','Qty_sold'
+UNION ALL
+(
+select distinct tx1.category as Category, 
+count( tx2.bill_number) as Bills , count(distinct tx2.user_id ) as Customers, 
+sum(tx2.amount) as Sales,	count(tx3.qty) as Qty_sold 
+from product_master tx1 
+join tx_log_loyalty tx2 on tx1.id=tx2.store_id 
+join tx_log_loyalty_lineitem tx3 on  tx2.user_id=tx3.user_id 
+group by category
+)
+INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/category_penetration_op.csv' 
+FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\r\n';
+
